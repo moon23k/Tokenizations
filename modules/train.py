@@ -22,14 +22,12 @@ class Trainer(TrainConfig):
         self.valid_dataloader = valid_dataloader
 
         self.criterion = nn.CrossEntropyLoss(ignore_index=self.pad_idx, label_smoothing=0.1).to(self.device)      
-        self.optimizer, self.scheduler = self.get_opt_tools(self.model) 
 
         self.ckpt_path = config.ckpt_path
-        self.record_path = f"ckpt/{self.model_name}.json"
+        self.record_path = f"ckpt/{self.tokenizer}.json"
         self.record_keys = ['epoch', 'train_loss', 'train_ppl',
                             'valid_loss', 'valid_ppl', 
                             'learning_rate', 'train_time']
-
 
         self.optimizer = optim.Adam(self.model.parameters(), 
 	                                lr=self.learning_rate, 

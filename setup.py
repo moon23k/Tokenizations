@@ -61,13 +61,6 @@ def tokenize_data(split, src_tokenizer, trg_tokenizer):
 
 
 def main():
-    name_dict = {'train.en': 'train.src',
-                 'train.de': 'train.trg', 
-                 'val.en': 'valid.src',
-                 'val.de': 'valid.trg', 
-                 'test_2016_flickr.en': 'test.src',
-                 'test_2016_flickr.de': 'test.trg'}
-    
     #download data
     os.system('bash download_data.sh')
     

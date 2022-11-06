@@ -1,14 +1,17 @@
-import random, torch, yaml, argparse
 import numpy as np
+import sentencepiece as spm
+import random, yaml, argparse
+
+import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.backends.cudnn as cudnn
-import sentencepiece as spm
 
 from modules.test import Tester
 from modules.train import Trainer
 from modules.data import load_dataloader
 from model.transformer import Transformer
+
 
 
 def set_seed(SEED=42):
@@ -21,11 +24,13 @@ def set_seed(SEED=42):
     cudnn.deterministic = True
 
 
+
 def load_tokenizer(lang):
     tokenizer = spm.SentencePieceProcessor()
-    tokenizer.load(f'data/{lang}_spm.model')
-    tokenizer.SetEncodeExtraOptions('bos:eos')    
+    tokenizer.load(f'data/vocabs/spm_{lang}.model')
+    #tokenizer.SetEncodeExtraOptions('bos:eos')    
     return tokenizer    
+
 
 
 def init_weights(m):
@@ -33,9 +38,11 @@ def init_weights(m):
         nn.init.xavier_uniform_(m.weight.data)    
 
 
+
 def count_params(model):
     params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"model params: {params:,}")
+    return params
+
 
 
 def check_size(model):
@@ -48,40 +55,36 @@ def check_size(model):
         buffer_size += buffer.nelement() * buffer.element_size()
 
     size_all_mb = (param_size + buffer_size) / 1024**2
-    print('model size: {:.3f}MB'.format(size_all_mb))
+    return size_all_mb
+    
 
 
 def load_model(config):
-    if config.model_name == 'base':
-        model = base.Transformer(config).to(config.device)
-    elif config.model_name == 'recurrent':
-        model = recurrent.Transformer(config).to(config.device)
-    elif config.model_name == 'evolved':
-        model = evolved.Transformer(config).to(config.device)     
-
+    model = Transformer(config).to(config.device)
 
     if config.task == 'train':
         model.apply(init_weights)
     else:
         model_state = torch.load(config.ckpt_path, map_location=config.device)['model_state_dict']
         model.load_state_dict(model_state)
-        model.eval()
+    count_params(model)
+    check_size(model)
+    return model.to(config.device)
 
-    return model
 
 
 class Config:
-    def __init__(self, task, model_name):
+    def __init__(self, args):
         with open('configs/model.yaml', 'r') as f:
             params = yaml.load(f, Loader=yaml.FullLoader)        
             for p in params.items():
                 setattr(self, p[0], p[1])
         
         self.task = task
-        self.model_name = model_name
-
-        self.unk_idx = 0
-        self.pad_idx = 1
+        self.tokenizer = config.tokenizer
+        
+        self.pad_idx = 0
+        self.unk_idx = 1
         self.bos_idx = 2
         self.eos_idx = 3
         
@@ -89,8 +92,7 @@ class Config:
         self.n_epochs = 10
         self.batch_size = 128
         self.learning_rate = 5e-4
-        self.scheduler = 'constant'
-        self.ckpt_path = f'ckpt/{model_name}.pt'
+        self.ckpt_path = f'ckpt/{self.tokenizer}.pt'
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     def print_attr(self):
@@ -98,8 +100,24 @@ class Config:
             print(f"* {attr}: {val}")
 
 
+
 def main(config):
-    return
+    set_seed()
+    config = Config(args)
+    model = load_model(config)
+
+    if config.task == 'train':
+        train_dataloader = load_dataloader(config, 'train')
+        valid_dataloader = load_dataloader(config, 'valid')        
+        
+        trainer = Trainer(config)
+        trainer.train()
+    
+    else:
+        test_dataloader = load_dataloader(config, 'test')
+        tester = Tester(config)
+        tester.test()
+
 
 
 if __name__ == '__main__':
@@ -109,8 +127,6 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     assert args.task in ['train', 'test', 'inference']
-    assert args.model in ['moses', 'spm', 'mecab']
+    assert args.tokenizer in ['moses', 'spm', 'mecab', 'kakao']
     
-    set_seed()
-    config = Config(args)
     main(config)

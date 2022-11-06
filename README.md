@@ -12,19 +12,30 @@ This repo covers a series of Experiments on **Tokenizers**. To concentrate only 
 
 </br>
 
-
-## Experiments desc
+## Tokenizer desc
 
 | &nbsp; **Language Pairs** &nbsp; | &nbsp; **Dataset** &nbsp; | **Tookit** | &nbsp; **Vocab** &nbsp; |
 | :---: | :---: | :---: | :---: |
-| En-De | Multi30k | &nbsp; SentencePiece / Moses &nbsp; | &nbsp; Integrated &nbsp; |
+| En-De | Multi30k | &nbsp; SentencePiece &nbsp; | &nbsp; Integrated &nbsp; |
 | - | - | - | Seperated |
-| De-En | Multi30k | &nbsp; SentencePiece / Moses &nbsp; | Integrated |
+| De-En | Multi30k | &nbsp; SentencePiece &nbsp; | Integrated |
 | - | - | - | Seperated |
-| Ko-En | AI Hub | &nbsp; SentencePiece / Moses / Mecab &nbsp; | Integrated |
+| Ko-En | AI Hub | &nbsp; SentencePiece / Mecab &nbsp; | Integrated |
 | - | - | - | Seperated |
-| En-Ko | AI Hub | &nbsp; SentencePiece / Moses / Mecab &nbsp; | Integrated |
+| En-Ko | AI Hub | &nbsp; SentencePiece / Mecab &nbsp; | Integrated |
 | - | - | - | Seperated |
+
+</br>
+</br>
+
+## Experimental Setups
+**Model**
+* Transformer
+
+**Dataset**
+* Multi30k
+* AI Hub
+
 
 </br>
 </br>

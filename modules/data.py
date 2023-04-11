@@ -4,61 +4,62 @@ from torch.nn.utils.rnn import pad_sequence
 
 
 
+
 class Dataset(torch.utils.data.Dataset):
-    def __init__(self, config, split):
+    def __init__(self, tokenizer, split):
         super().__init__()
-        self.data = self.read_dataset(split)
+        self.tokenizer = tokenizer
+        self.data = self.load_data(split)
 
-
-    def read_dataset(self, split):
+    @staticmethod
+    def load_data(split):
         with open(f"data/{split}.json", 'r') as f:
             data = json.load(f)
         return data
 
-
     def __len__(self):
         return len(self.data)
-
     
     def __getitem__(self, idx):
+        
         src = self.data[idx]['src']
-        trg = self.data[idx]['trg'][:-1]
-        return src, trg 
+        trg = self.data[idx]['trg']
+        
+        src = tokenizer.EncodeAsIds(src)
+        trg = tokenizer.EncodeAsIds(trg)
+        
+        return src, trg
 
 
 
+class Collator(object):
+    def __init__(self, pad_id):
+        self.pad_id = pad_id
 
-def load_dataloader(config, split):
-    global pad_idx
-    pad_idx = config.pad_idx
-
-    dataset = Dataset(config, split)
-    
-    def _collate_fn(batch):
+    def __call__(self, batch):
         src_batch, trg_batch = [], []
         
         for src, trg in batch:
             src_batch.append(torch.LongTensor(src))
             trg_batch.append(torch.LongTensor(trg))
         
-        batch_size = len(src_batch)
-        eos_batch = torch.LongTensor([3 for _ in range(batch_size)])
-        
-        src_batch = pad_sequence(src_batch, 
-                                 batch_first=True, 
-                                 padding_value=pad_idx)
+        src_batch = pad_sequence(src_batch,
+                                 batch_first=True,
+                                 padding_value=self.pad_id)
         
         trg_batch = pad_sequence(trg_batch, 
                                  batch_first=True, 
-                                 padding_value=pad_idx)
+                                 padding_value=self.pad_id)
         
-        trg_batch = torch.column_stack((trg_batch, eos_batch))
+        return {'src': src_batch, 
+                'trg': trg_batch}
 
-        return {'src': src_batch, 'trg': trg_batch}
 
-    return DataLoader(dataset, 
+
+def load_dataloader(config, tokenizer, split):
+
+    return DataLoader(Dataset(tokenizer, split), 
                       batch_size=config.batch_size, 
-                      shuffle=False, 
-                      collate_fn=_collate_fn, 
+                      shuffle=True if config.mode == 'train' else False,
+                      collate_fn=Collator(config.pad_id),
                       num_workers=2)
-

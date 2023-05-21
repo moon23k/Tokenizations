@@ -37,10 +37,10 @@ class Config:
         self.tokenizer_type = args.tokenizer_type
         self.ckpt_path = f'ckpt/{self.tokenizer_type}.pt'
         
-        use_cuda = torch.cuda.is_available()
-        self.device_type = 'cuda' if use_cuda else 'cpu'
-        self.device = torch.device(self.device_type)
-
+        if self.mode != 'inference':
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        else:
+            self.deviec = torch.device('cpu')
     
     def print_attr(self):
         for attribute, value in self.__dict__.items():

@@ -22,14 +22,16 @@ class Trainer:
         self.train_dataloader = train_dataloader
         self.valid_dataloader = valid_dataloader
 
-        self.optimizer = optim.AdamW(self.model.parameters(), lr=config.learning_rate)
+        self.early_stop = True
+        self.patience = 3
+
+        self.optimizer = optim.AdamW(self.model.parameters(), lr=config.lr)
         self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min')
 
         self.ckpt = config.ckpt
-        self.record_path = f"ckpt/{config.model_type}.json"
-        self.record_keys = ['epoch', 'train_loss', 'train_ppl',
-                            'valid_loss', 'valid_ppl', 
-                            'learning_rate', 'train_time']
+        self.record_path = f"ckpt/{config.tokenizer_type}.json"
+        self.record_keys = ['epoch', 'train_loss', 'train_ppl','valid_loss', 
+                            'valid_ppl', 'learning_rate', 'train_time']
 
 
     def print_epoch(self, record_dict):

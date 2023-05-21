@@ -1,6 +1,7 @@
-import torch, math
+import math, torch
 import torch.nn as nn
 from collections import namedtuple
+
 
 
 def shift_trg(x):
@@ -64,8 +65,7 @@ class Transformer(nn.Module):
                                           num_encoder_layers=config.n_layers,
                                           num_decoder_layers=config.n_layers,
                                           dropout=config.dropout_ratio,
-                                          batch_first=True,
-                                          norm_first=True)
+                                          batch_first=True, norm_first=True)
 
         self.generator = nn.Linear(config.hidden_dim, config.vocab_size)
         self.criterion = nn.CrossEntropyLoss()
@@ -102,23 +102,15 @@ class Transformer(nn.Module):
                                         tgt_key_padding_mask=trg_pad_mask,
                                         memory_key_padding_mask=src_pad_mask)
 
-    
-
-
-def init_xavier(model):
-    for p in model.parameters():
-        if p.dim() > 1:
-            nn.init.xavier_uniform_(p)
 
 
 
 def load_model(config):
-    model = Transformer(config)
+    model = transformer(config)
 
-    if config.task == 'train':
-        model.apply(init_weights)
-    else:
-        model_state = torch.load(config.ckpt_path, map_location=config.device)['model_state_dict']
-        model.load_state_dict(model_state)
+    if config.mode != 'train':
+        model_state = torch.load()
+        model.load_state_dict()
+        print()
 
-    return model.to(config.device)
+    return model.to(config.device)        

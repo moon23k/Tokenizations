@@ -1,5 +1,11 @@
-import os, json, yaml, argparse
-import sentencepiece as spm
+import os, json, argparse
+from datasets import load_dataset
+from tokenizers import Tokenizer, normalizers
+from tokenizers.models import WordLevel, BPE, WordPiece, Unigram
+from tokenizers.normalizers import NFD, Lowercase, StripAccents
+from tokenizers.pre_tokenizers import Whitespace
+from tokenizers.trainers import WordLevelTrainer, BpeTrainer, WordPieceTrainer, UnigramTrainer
+
 
 
 
@@ -9,7 +15,7 @@ def select_data(orig_data, volumn=32000):
     max_diff = 50
 
     volumn_cnt = 0
-    concat, processed = [], []
+    corpus, selected = [], []
     
     for elem in orig_data:
         temp_dict = dict()
@@ -24,8 +30,10 @@ def select_data(orig_data, volumn=32000):
         if max_condition & min_condition & dif_condition:
             temp_dict['src'] = src
             temp_dict['trg'] = trg
-            processed.append(temp_dict)
-            concat.append(src + trg)
+
+            selected.append(temp_dict)
+            corpus.append(src)
+            corpus.append(trg)
             
             #End condition
             volumn_cnt += 1
@@ -33,55 +41,10 @@ def select_data(orig_data, volumn=32000):
                 break
 
     with open('data/corpus.txt', 'w') as f:
-        f.write('\n'.join(concat))
+        f.write('\n'.join(corpus))
 
-    return processed
+    return selected
 
-
-
-
-def build_vocab(tokenizer_type):
-    assert os.path.exists('config.yaml')
-    with open('config.yaml', 'r') as f:
-        vocab_config = yaml.load(f, Loader=yaml.FullLoader)['vocab']
-
-    assert os.path.exists(f'data/corpus.txt')
-    opt = f"--input=data/corpus.txt\
-            --model_prefix=data/{tokenizer_type}/tokenizer\
-            --vocab_size={vocab_config['vocab_size']}\
-            --character_coverage={vocab_config['coverage']}\
-            --model_type={tokenizer_type}\
-            --pad_id={vocab_config['pad_id']} --pad_piece={vocab_config['pad_piece']}\
-            --unk_id={vocab_config['unk_id']} --unk_piece={vocab_config['unk_piece']}\
-            --bos_id={vocab_config['bos_id']} --bos_piece={vocab_config['bos_piece']}\
-            --eos_id={vocab_config['eos_id']} --eos_piece={vocab_config['eos_piece']}"
-
-    spm.SentencePieceTrainer.Train(opt)
-
-
-
-def tokenize_data(tokenizer, data_obj):
-    max_trg_len = 0
-    tokenized = []
-    for elem in data_obj:
-        temp_dict = dict()
-        
-        temp_dict['src'] = tokenizer.EncodeAsIds(elem['src'])
-        temp_dict['trg'] = tokenizer.EncodeAsIds(elem['trg'])
-
-        if max_trg_len < len(temp_dict['trg']):
-            max_trg_len = len(temp_dict['trg'])
-
-        tokenized.append(temp_dict)
-
-    with open('config.yaml', 'r') as f:
-        config = yaml.load(f, Loader=yaml.FullLoader)
-        config['model'][f'{tokenizer_type}_max_pred_len'] = max_trg_len
-
-    with open('config.yaml', 'w') as f:
-        yaml.dump(config, f)        
-    
-    return tokenized
 
 
 def save_data(data_obj):
@@ -92,31 +55,76 @@ def save_data(data_obj):
     for key, val in data_dict.items():
         with open(f'data/{key}.json', 'w') as f:
             json.dump(val, f)
+
+
+
+def train_tokenizer(tokenizer_type, vocab_size):
+    corpus_path = f'data/corpus.txt'
+    assert os.path.exists(corpus_path)
+    os.makedirs(f'tokenizer/{tokenizer_type}', exist_ok=True)
+
+    _vocab_size = int(vocab_size[:-1]) * 1000
+    special_tokens = ['[PAD]', '[UNK]', '[BOS]', '[EOS]']
+
+
+    if tokenizer_type == 'WL':
+        tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
+        tokenizer.normalizer = normalizers.Sequence([NFD(), Lowercase(), StripAccents()])
+        tokenizer.pre_tokenizer = Whitespace()
+        trainer = WordLevelTrainer(vocab_size=_vocab_size, min_frequency=2, special_tokens=special_tokens)
     
-
-
-def main(tokenizer_type):
-    if os.path.exists('data/corpus.txt')
-        orig = load_dataset('wmt14', 'de-en', split='train')['translation']
-        selected = select_data(orig)
-        save_data(selected)
+    elif tokenizer_type == 'BPE':
+        tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
+        tokenizer.normalizer = normalizers.Sequence([NFD(), Lowercase(), StripAccents()])
+        tokenizer.pre_tokenizer = Whitespace()
+        trainer = BpeTrainer(vocab_size=_vocab_size, min_frequency=2, special_tokens=special_tokens)
     
-    #Build Vocab
-    build_vocab(tokenizer_type)
+    elif tokenizer_type == 'WP':
+        tokenizer = Tokenizer(WordPiece(unk_token="[UNK]"))
+        tokenizer.normalizer = normalizers.Sequence([NFD(), Lowercase(), StripAccents()])
+        tokenizer.pre_tokenizer = Whitespace()
+        trainer = WordPieceTrainer(vocab_size=_vocab_size, special_tokens=special_tokens)
 
+    elif tokenizer_type == 'UNI':
+        tokenizer = Tokenizer(Unigram())
+        tokenizer.normalizer = normalizers.Sequence([NFD(), Lowercase(), StripAccents()])
+        tokenizer.pre_tokenizer = Whitespace()
+        trainer = UnigramTrainer(vocab_size=_vocab_size, unk_token='[UNK]', special_tokens=special_tokens)
+
+
+    tokenizer.train(files=[corpus_path], trainer=trainer)
+    tokenizer.save(f"tokenizer/{tokenizer_type}/{tokenizer_type}_{vocab_size}.json")
+
+
+
+def main(tokenizer_type, vocab_size, tt_lst, vs_lst):
+    #Load, Select and Save Dataset
+    orig_data = load_dataset('wmt14', 'de-en', split='train')['translation']
+    selected_data = select_data(orig_data)
+    save_data(selected_data)
+
+    #Train Tokenizer
+    if tokenizer_type == 'all':
+        for tt in tt_lst:
+            if vocab_size == 'all':
+                for vs in vs_lst:
+                    train_tokenizer(tt, vs)    
+            else:
+                train_tokenizer(tt, vocab_size)        
+    else:
+        train_tokenizer(tokenizer_type, vocab_size)
+    
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-tokenizer_type', required=True)
+    parser.add_argument('-vocab_size', required=True)
     
+    tt_lst = ['all', 'WL', 'WP', 'BPE', 'UNI']
+    vs_lst = ['all', '5k', '10k', '15k']
+
     args = parser.parse_args()
-    tokenizer_types = ['all', 'word', 'char', 'bpe', 'unigram']
-    assert args.tokenizer_type in tokenizer_types
-    
-    
-    if args.tokenizer_type == 'all':
-        for tokenizer_type in tokenizer_types[1:]:
-            main(tokenizer_type)
-    else:
-        main(args.tokenizer_type)
+    assert args.tokenizer_type in tt_lst
+    assert args.vocab_size in vs_lst
+    main(args.tokenizer_type, args.vocab_size, tt_lst[1:], vs_lst[1:])

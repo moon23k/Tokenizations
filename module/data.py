@@ -20,13 +20,12 @@ class Dataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.data)
     
-    def __getitem__(self, idx):
-        
+    def __getitem__(self, idx):        
         src = self.data[idx]['src']
         trg = self.data[idx]['trg']
         
-        src = tokenizer.EncodeAsIds(src)
-        trg = tokenizer.EncodeAsIds(trg)
+        src = self.tokenizer.encode(src).ids
+        trg = self.tokenizer.encode(trg).ids
         
         return src, trg
 

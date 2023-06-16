@@ -28,7 +28,7 @@ class Search:
             return node.log_prob
 
         #find max number of consecutively repeated tokens
-        repeat = max([sum(1 for token in group if token != self.pad_id) for _, group in groupby(node.pred.tolist())])
+        repeat = max([sum(1 for token in group if token != self.pad_id) for _, group in groupby(node.pred)])
 
         repeat_penalty = 0.5 if repeat > max_repeat else 1
         len_penalty = ((node.length + min_length) / (1 + min_length)) ** alpha
@@ -39,10 +39,13 @@ class Search:
         return float(score)
 
 
-    def get_nodes(self):
+    def init_nodes(self):
+        #returns [ Node, nodes, end_nodes ]
+        
         Node = self.Node
         nodes = PriorityQueue()
-        start_tensor = torch.LongTensor([[self.bos_id]]).to(self.device)
+        #start_tensor = torch.LongTensor([[self.bos_id]]).to(self.device)
+        start_tensor = [self.bos_id]
 
         start_node = Node(prev_node = None,
                           pred = start_tensor,
@@ -52,25 +55,25 @@ class Search:
         for _ in range(self.beam_size):
             nodes.put((0, start_node))
                     
-        return Node, nodes, [], []    
+        return Node, nodes, []
 
 
 
     def beam_search(self, input_tensor):
-        Node, nodes, end_nodes, top_nodes = self.get_nodes()
+        Node, nodes, end_nodes = self.init_nodes()
 
         src_pad_mask = torch.zeros_like(input_tensor, dtype=torch.bool).to(self.device)
         memory = self.model.encoder(input_tensor, src_key_padding_mask=src_pad_mask)
 
         for t in range(self.max_len):
             curr_nodes = [nodes.get() for _ in range(self.beam_size)]
-            
+
             for curr_score, curr_node in curr_nodes:
-                if curr_node.pred[:, -1].item() == self.eos_id and curr_node.prev_node != None:
+                if curr_node.pred[-1] == self.eos_id and curr_node.prev_node != None:
                     end_nodes.append((curr_score, curr_node))
                     continue
 
-                d_input = curr_node.pred 
+                d_input = torch.LongTensor([curr_node.pred]).to(self.device)
                 d_pad_mask = torch.zeros_like(d_input, dtype=torch.bool).to(self.device)
                 d_mask = self.generate_square_subsequent_mask(d_input.size(1))
                 d_out = self.model.decoder(d_input, memory, tgt_mask=d_mask, 
@@ -79,30 +82,30 @@ class Search:
                 out = self.model.generator(d_out)[:, -1]
                 
                 logits, preds = torch.topk(out, self.beam_size)
-                logits, preds = logits, preds
                 log_probs = -F.log_softmax(logits, dim=-1)
 
                 for k in range(self.beam_size):
-                    pred = preds[:, k].unsqueeze(0)
+                    pred = preds[:, k].unsqueeze(0).item()
                     log_prob = log_probs[:, k].item()
-                    pred = torch.cat([curr_node.pred, pred], dim=-1)           
                     
                     next_node = Node(prev_node = curr_node,
-                                     pred = pred,
+                                     pred = curr_node.pred + [pred],
                                      log_prob = curr_node.log_prob + log_prob,
                                      length = curr_node.length + 1)
-                    next_score = self.get_score(next_node)                
+                    
+                    next_score = self.get_score(next_node)                    
                     nodes.put((next_score, next_node))
-                
+                        
                 if (not t) or (len(end_nodes) == self.beam_size):
                     break
 
         if len(end_nodes) == 0:
-            _, top_node = nodes.get()
+            _, beam_pred = nodes.get()
         else:
-            _, top_node = sorted(end_nodes, key=operator.itemgetter(0), reverse=True)[0]
+            _, beam_pred = sorted(end_nodes, key=operator.itemgetter(0), reverse=True)[0]
         
-        return top_node.pred.squeeze(0)
+        return beam_pred.pred
+    
     
 
     def greedy_search(self, input_tensor):

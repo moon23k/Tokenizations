@@ -138,8 +138,12 @@ def main(config):
         trainer.train()        
     elif config.mode == 'test':
         test_dataloader = load_dataloader(config, tokenizer, 'test')
-        tester = Tester(config, model, test_dataloader)
-        tester.test()
+        tester = Tester(config, model, tokenizer, test_dataloader)
+        greedy_score, beam_score = tester.test()
+        print(f"{config.path} Model's test Result")
+        print(f"  --- Greedy score: {greedy_score}")
+        print(f"  ---  Beam  score: {beam_score}")
+        
     elif config.mode == 'inference':
         inference(config, model, tokenizer)
 

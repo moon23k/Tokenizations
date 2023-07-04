@@ -1,16 +1,32 @@
-## Tokenization Strategies
-자연어 처리는 인간이 사용하는 언어를 컴퓨터가 이해하고 처리할 수 있도록 하는 인공지능의 한 분야입니다. 
-자연어를 컴퓨터가 이해할 수 있는 이진법으로 표현하기 위해서는 우선 자연어 시퀀스를 작은 단위로 분할해야 하며, 이를 위한 일련의 프로세스를 Tokenization이라고 합니다.
-Tokenization을 통해 시퀀스를 분할하는 것은 방식에 따라 Word, Character, SubWord Tokenization으로 크게 나누어 볼 수 있습니다.
+## Introduction
 
-Word Tokenization은 구분자를 기준으로 시퀀스를 분할하는 것을, Character Tokenization은 특정 언어의 최소 Character단위로 분할하는 것을, 그리고 Sub Word는 Word Tokenization과 Character Tokenization의 중간 형태로 분할 하는 것을 의미합니다.
+&nbsp; Tokenization plays a crucial role in Natural Language Processing. However, comparative studies focused on tokenization are rare. This is especially true in Natural Language Generation process based on small data and model structures.
+To address this issue, this repository covers comparative analysis of the impact of four distinct Tokenization approaches on the performance of Neural Machine Translation task. By doing so, I hope to establish a valuable benchmark that can serve as a reference point for future research endeavors.
 
-Word Tokenizer는 구현 방식이 가장 직관적이고, 간단하다는 장점이 있지만, 다양한 도메인의 많은 데이터를 모두 소화하기 위해서는 그만큼 많은 단어 사전이 필요하다는 단점이 존재합니다.
-Character Tokenizer는 가장 적은 단어 사전이 필요하지만, Tokenization을 거친 시퀀스의 길이가 매우 길기 때문에 이를 조합하는 모델입장에서는 그만큼 학습이 어렵다는 단점이 존재합니다.
-Sub Word Tokenizer는 이 둘의 장단점을 적절하게 섞은 방식으로, 단어를 보다 작은 의미가 있는 단위로 분할해 사용하며, 이를 위한 여러가지 알고리즘이 존재합니다. 구현이 앞선 두 방식보다는 복잡하지만, 가장 대중적으로 사용되는 Tokenzation 방식입니다.
+<br><br>
 
-이 repo에서는 Tokenizer에 따라 NMT과제에서 미치는 영향을 파악해봅니다. 이를 위해 네 가지 Tokenization 방식을 사용하며, 각각은 Word-Level, Word-Piece, BPE, Unigram입니다.  
+## Background
 
+**Word Tokenization**
+  * Split Text based on Words according to separator like white space
+  * The most simple and intuitive Tokenization Methodology
+  * Large vocab size is essential for various expressive abilities
+  * Easily get into Out of Vocabulary trouble, and has difficulty to respond to new words
+<br>
+
+**Character Tokenization**
+  * Split Text based on Character
+  * Only vocab size equal to the number of alphabets appearing in the text is required
+  * Out of Vocabulary rarely occurs, and easy to respond to new words
+  * difficult to train model because the model has to learn a lot of token combinations
+<br>
+
+**Sub-Word Tokenization**
+  * Intermediate form of Word Toknenization and Character Toknenization
+  * Split text based on subwords, which are smaller than words yet larger than characters
+  * There are various algorithms for how to construct sub words
+  * Possible to flexibly cope with new expressions, and can prevent token expressions getting too long
+  * most commonly used on various models
 
 </br></br>
 
@@ -18,54 +34,98 @@ Sub Word Tokenizer는 이 둘의 장단점을 적절하게 섞은 방식으로, 
 ## Tokenizers
 
 **Word-Level Tokenizer** <br>
-Word-Level Tokenizer는 텍스트를 공백 문자를 기준으로 단어 단위로 분리하는 가장 기본적인 토큰화 방법입니다. 예를 들어, "This is what you came for"라는 문장은 ["This", "is", "what", "you", "came", "for"]와 같이 단어 단위로 토큰화됩니다. 이 방법은 간단하고 직관적이지만, 언어에 따라 단어의 형태가 다양하게 변할 수 있기 때문에 일관된 처리를 보장하기 어렵습니다. 
+> This is the “classic” tokenization algorithm. It let’s you simply map words to IDs without anything fancy. This has the advantage of being really simple to use and understand, but it requires extremely large vocabularies for a good coverage. Using this Model requires the use of a PreTokenizer. No choice will be made by this model directly, it simply maps input tokens to IDs.
 
 <br>
 
 
 **Word Piece Tokenizer** <br>
+> This is a subword tokenization algorithm quite similar to BPE, used mainly by Google in models like BERT. It uses a greedy algorithm, that tries to build long words first, splitting in multiple tokens when entire words don’t exist in the vocabulary. This is different from BPE that starts from characters, building bigger tokens as possible. It uses the famous ## prefix to identify tokens that are part of a word (ie not starting a word).
 
 <br>
 
 **Byte Pair Encoding Tokenizer** <br>
-Byte Pair Encoding(BPE)는 시퀀스에 포함된 단어들을 적절한 단위로 분할하는 Sub-Word Tokenization 알고리즘 중 하나 입니다. BPE 알고리즘은 Token들의 출현 빈도를 기반으로 높은 빈도의 Token들을 Merge하며, 최종적으로 사용자가 기 설정한 Merge Step혹은 Vocab Size에 도달하는 시점까지 분할 및 병합을 반복합니다.
-BPE 알고리즘은 간단한 연산 구조를 바탕으로, 빠른 속도로 작동한다는 장점이 있습니다. 하지만 Pre-Tokenization을 가정하고 있기 때문에, 띄어쓰기가 없는 일부 언어에 대해서는 적용이 힘들다는 단점이 존재합니다.
+> One of the most popular subword tokenization algorithm. The Byte-Pair-Encoding works by starting with characters, while merging those that are the most frequently seen together, thus creating new tokens. It then works iteratively to build new tokens out of the most frequent pairs it sees in a corpus. BPE is able to build words it has never seen by using multiple subword tokens, and thus requires smaller vocabularies, with less chances of having “unk” (unknown) tokens.
+
 <br>
 
 **Unigram** <br>
+> Unigram is also a subword tokenization algorithm, and works by trying to identify the best set of subword tokens to maximize the probability for a given sentence. This is different from BPE in the way that this is not deterministic based on a set of rules applied sequentially. Instead Unigram will be able to compute multiple ways of tokenizing, while choosing the most probable one.
 
 </br></br>
 
 
 ## Setups
 
-**Model** <br>
-
-**Data** <br>
+| Small Model Setup | Big Model Setup | Training Setup |
+|---|---|---|
+| Embedding Dimension: 256 | Embedding Dimension: 512 | N_Epochs: 10 |
+| Hidden Dimension: 256 | Hidden Dimension: 512 | LR: 5e-4 |
+| FFN Dimension: 512 | FFN Dimension: 1024 | iters_to_accumulate: 4 |
+| N Heads: 8 | N Heads: 8 | Gradient Clip Max Norm: 1 |
+| N Layers: 3 | N Layers: 3 | Apply AMP: True |
 
 
 </br></br>
 
 ## Results
+
+> **Small Model**
+
 | &emsp; Tokenizer Type &emsp; | &emsp; Vocab Size &emsp; | &emsp; Greedy Score &emsp; | &emsp; Beam Score &emsp; |
 |:---:|:---:|:---:|:---:|
-| Word Level | 10k |15.31|11.54|
-| Word Level | 30k |18.92|12.30|
-| Word Piece | 10k |18.78|14.75|
-| Word Piece | 30k |16.76|16.71|
-| BPE | 10k |20.66|14.08|
-| BPE | 30k |15.01|15.37|
-| Unigram | 10k |15.34|12.71|
-| Unigram | 30k |14.29|14.10|
+| Word Level |  5k | 15.36 | 11.94 |
+| -          | 15k | 14.39 | 11.49 |
+| -          | 30k | 13.06 | 11.42 |
+| Word Piece |  5k | **22.72** | **21.50** |
+| -          | 15k | 14.42 | 13.75 |
+| -          | 30k | 13.31 | 10.53 |
+| BPE        |  5k | 12.83 | 11.84 |
+| -          | 15k | 13.78 | 10.53 |
+| -          | 30k | 14.63 | 11.00 |
+| Unigram    |  5k | **11.33** | 11.05 |
+| -          | 15k | 11.44 |  **9.08** |
+| -          | 30k | 14.23 | 11.16 |
 
 <br>
 
-Word Level을 제외한 세 가지 Sub-Word Tokenizer는 모두 Vocab Size가 증가함에 따라 성능 하락이 발생했습니다.
-이는 비교적 작은 모델과 데이터에서 지나치게 많은 Vocab 선택지를 부여해, 모델의 추론 능력이 하락했다는 것으로 해석할 수 있습니다. 
-반면 Word Level에서 Vocab Size 상승에 따른 성능 향상은, 더 많은 단순 단어 표현 가능성 제고로 인한 것으로 해석할 수 있습니다.
+In experiments based on the Small model, the performance of Word Level and Word Piece decreases as the vocab size increases, while the performance of BPE and Unigram tends to improve as the vocab size increases. Under the same conditions, the Word Piece method with vocab as much as 5k showed the best performance, and there is not a large deviation from the other methods. 
+The small performance deviation can be attributed to the fact that the model size is small and relatively insensitive.
+
+
+<br><br>
+> **Big Model**
+
+| &emsp; Tokenizer Type &emsp; | &emsp; Vocab Size &emsp; | &emsp; Greedy Score &emsp; | &emsp; Beam Score &emsp; |
+|:---:|:---:|:---:|:---:|
+| Word Level |  5k | 14.05 | 11.90 |
+| -          | 15k | 13.82 | 12.52 |
+| -          | 30k |  8.73 |  7.41 |
+| Word Piece |  5k | **27.75** | **23.61** |
+| -          | 15k | 19.13 | 14.35 |
+| -          | 30k |  **0.00** |  **0.00** |
+| BPE        |  5k | 16.20 | 11.44 |
+| -          | 15k |  8.88 |  6.33 |
+| -          | 30k | 14.29 |  9.65 |
+| Unigram    |  5k | 17.06 | 15.79 |
+| -          | 15k | 13.06 | 10.09 |
+| -          | 30k |  0.14 |  0.05 |
+
+<br>
+
+In the experiments conducted on the Big model, the 5k-sized WP also showed the best performance. And it is also possible to confirm that the tendency found in the previous Small Model-based experiment is maintained to some extent. However, there is a large variation in performance by vocab size, which seems to be the main reason that the size of the model increases and becomes more sensitive.
 
 </br></br>
 
-## References
+## How to Use
+```
+git clone https://github.com/moon23k/Tokenizers.git
+```
 
-<br>
+```
+cd Tokenizers
+python3 setup.py
+python3 run.py
+```
+</br>
+

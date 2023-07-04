@@ -9,7 +9,7 @@ from tokenizers.trainers import WordLevelTrainer, BpeTrainer, WordPieceTrainer, 
 
 
 
-def select_data(orig_data, volumn=32000):
+def select_data(orig_data, volumn=111000):
     min_len = 10 
     max_len = 300
     max_diff = 50
@@ -49,7 +49,7 @@ def select_data(orig_data, volumn=32000):
 
 def save_data(data_obj):
     #split data into train/valid/test sets
-    train, valid, test = data_obj[:-2000], data_obj[-2000:-1000], data_obj[-1000:]
+    train, valid, test = data_obj[:-1100], data_obj[-1100:-100], data_obj[-100:]
     data_dict = {k:v for k, v in zip(['train', 'valid', 'test'], [train, valid, test])}
 
     for key, val in data_dict.items():

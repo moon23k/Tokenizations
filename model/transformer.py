@@ -19,19 +19,21 @@ def generate_square_subsequent_mask(sz):
 class PositionalEncoding(nn.Module):
     def __init__(self, config, max_len=512):
         super(PositionalEncoding, self).__init__()
-        self.dropout = nn.Dropout(config.dropout_ratio)
         
         pe = torch.zeros(max_len, config.emb_dim)
+        
         position = torch.arange(0, max_len).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, config.emb_dim, 2) * -(math.log(10000.0) / config.emb_dim))
+        
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
         pe = pe.unsqueeze(0)
+
         self.register_buffer('pe', pe)
         
+
     def forward(self, x):
-        x = x + self.pe[:, :x.size(1)]
-        return self.dropout(x)
+        return x + self.pe[:, :x.size(1)]
 
 
 
@@ -41,22 +43,23 @@ class Embeddings(nn.Module):
 
         self.tok_emb = nn.Embedding(config.vocab_size, config.emb_dim)
         self.scale = math.sqrt(config.emb_dim)
+
         self.pos_emb = PositionalEncoding(config)
-        self.dropout = nn.Dropout(config.dropout_ratio)
+        self.pos_dropout = nn.Dropout(config.dropout_ratio)
 
         self.use_fc_layer = (config.emb_dim != config.hidden_dim)
         if self.use_fc_layer:
             self.fc = nn.Linear(config.emb_dim, config.hidden_dim)
+            self.fc_dropout = nn.Dropout(config.dropout_ratio)
 
 
     def forward(self, x):
         out = self.tok_emb(x) * self.scale
-        out = self.pos_emb(out)
+        out = self.pos_dropout(self.pos_emb(out))
 
-        if self.use_fc_layer:
-            return self.dropout(self.fc(out))
-        return self.dropout(out)
-
+        if not self.use_fc_layer:
+            return out
+        return self.fc_dropout(self.fc(out))
 
 
 
@@ -64,13 +67,16 @@ class Encoder(nn.Module):
     def __init__(self, config):
         super(Encoder, self).__init__()
 
+        layer = nn.TransformerEncoderLayer(
+            d_model=config.hidden_dim,
+            nhead=config.n_heads,
+            dim_feedforward=config.pff_dim,
+            dropout=config.dropout_ratio,
+            activation='gelu',
+            batch_first=True
+        )
+
         self.embeddings = Embeddings(config)
-        layer = nn.TransformerEncoderLayer(d_model=config.hidden_dim,
-                                           nhead=config.n_heads,
-                                           dim_feedforward=config.pff_dim,
-                                           dropout=config.dropout_ratio,
-                                           activation='gelu',
-                                           batch_first=True)
         self.layers = clones(layer, config.n_layers)
 
 
@@ -86,13 +92,16 @@ class Decoder(nn.Module):
     def __init__(self, config):
         super(Decoder, self).__init__()
 
+        layer = nn.TransformerDecoderLayer(
+            d_model=config.hidden_dim,
+            nhead=config.n_heads,
+            dim_feedforward=config.pff_dim,
+            dropout=config.dropout_ratio,
+            activation='gelu',
+            batch_first=True
+        )
+
         self.embeddings = Embeddings(config)
-        layer = nn.TransformerDecoderLayer(d_model=config.hidden_dim,
-                                           nhead=config.n_heads,
-                                           dim_feedforward=config.pff_dim,
-                                           dropout=config.dropout_ratio,
-                                           activation='gelu',
-                                           batch_first=True)
         self.layers = clones(layer, config.n_layers)
 
 
@@ -141,7 +150,9 @@ class Transformer(nn.Module):
 
         #Getting Outputs
         self.out.logit = logit
-        self.out.loss = self.criterion(logit.contiguous().view(-1, self.vocab_size), 
-                                       label.contiguous().view(-1))
+        self.out.loss = self.criterion(
+            logit.contiguous().view(-1, self.vocab_size), 
+            label.contiguous().view(-1)
+        )
         
         return self.out

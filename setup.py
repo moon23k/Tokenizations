@@ -1,15 +1,15 @@
 import os, json, argparse
 from datasets import load_dataset
 from tokenizers import Tokenizer, normalizers
-from tokenizers.models import WordLevel, BPE, WordPiece, Unigram
-from tokenizers.normalizers import NFD, Lowercase, StripAccents
 from tokenizers.pre_tokenizers import Whitespace
+from tokenizers.normalizers import NFD, Lowercase, StripAccents
+from tokenizers.models import WordLevel, BPE, WordPiece, Unigram
 from tokenizers.trainers import WordLevelTrainer, BpeTrainer, WordPieceTrainer, UnigramTrainer
 
 
 
 
-def select_data(orig_data, volumn=111000):
+def select_data(orig_data, volumn=101100):
     min_len = 10 
     max_len = 300
     max_diff = 50

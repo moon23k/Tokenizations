@@ -1,23 +1,23 @@
-import numpy as np
-import os, random, argparse
-
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import torch.backends.cudnn as cudnn
-
-from module.test import Tester
-from module.train import Trainer
-from module.data import load_dataloader
-from module.model import load_model
-from module.search import Search
+import os, argparse, torch
 
 from tokenizers import Tokenizer
 from tokenizers.processors import TemplateProcessing
 
+from module import (
+    load_dataloader,
+    load_model,
+    Trainer, 
+    Tester, 
+    Generator
+)
+
+
 
 
 def set_seed(SEED=42):
+    import random
+    import numpy as np
+    import torch.backends.cudnn as cudnn
     random.seed(SEED)
     np.random.seed(SEED)
     torch.manual_seed(SEED)
@@ -39,6 +39,8 @@ class Config(object):
         os.makedirs(f'ckpt/{self.tokenizer_type}', exist_ok=True)
         self.ckpt = f"ckpt/{self.tokenizer_type}/{self.path}.pt"
 
+        self.tokenizer_path = f"tokenizer/{self.tokenizer_type}/{config.path}.json"
+
         #Tokenizer Configs
         self.pad_id = 0
         self.unk_id = 1
@@ -52,11 +54,7 @@ class Config(object):
         self.early_stop = True
         self.patience = 3
         self.iters_to_accumulate = 4
-
-        if self.mode == 'test':
-            self.batch_size = 1
-        else:
-            self.batch_size = 128
+        self.batch_size = 128
 
         #Model Configs
         self.emb_dim = 512
@@ -79,10 +77,9 @@ class Config(object):
 
 
 def load_tokenizer(config):
-    tokenizer_path = f"tokenizer/{config.tokenizer_type}/{config.path}.json"
-    assert os.path.exists(tokenizer_path)
+    assert os.path.exists(config.tokenizer_path)
 
-    tokenizer = Tokenizer.from_file(tokenizer_path)
+    tokenizer = Tokenizer.from_file(config.tokenizer_path)
     tokenizer.post_processor = TemplateProcessing(
         single="[BOS] $A [EOS]",
         special_tokens=[
@@ -95,36 +92,7 @@ def load_tokenizer(config):
 
 
 
-def inference(config, model, tokenizer):
-    search_module = Search(config, model)
-
-    print(f'--- Inference Process Started! ---')
-    print('[ Type "quit" on user input to stop the Process ]')
-    
-    while True:
-        input_seq = input('\nUser Input Sequence >> ').lower()
-
-        #Enc Condition
-        if input_seq == 'quit':
-            print('\n--- Inference Process has terminated! ---')
-            break        
-
-        input_seq = tokenizer.EncodeAsIds(input_seq)
-        input_seq = torch.LongTensor([input_seq])
-
-        if config.search_method == 'beam':
-            output_seq = search_module.beam_search(input_seq)
-        else:
-            output_seq = search_module.greedy_search(input_seq)
-
-        output_seq = tokenizer.decode(output_seq)
-
-        print(f"Model Out Sequence >> {output_seq}")       
-
-
-
 def main(config):
-    #Prerequisites
     set_seed()
     config = Config(args)
     model = load_model(config)
@@ -136,16 +104,16 @@ def main(config):
         valid_dataloader = load_dataloader(config, tokenizer, 'valid')        
         trainer = Trainer(config, model, train_dataloader, valid_dataloader)
         trainer.train()        
+    
     elif config.mode == 'test':
         test_dataloader = load_dataloader(config, tokenizer, 'test')
         tester = Tester(config, model, tokenizer, test_dataloader)
-        greedy_score, beam_score = tester.test()
-        print(f"{config.path} Model's test Result")
-        print(f"  --- Greedy score: {greedy_score}")
-        print(f"  ---  Beam  score: {beam_score}")
+        tester.test()
         
     elif config.mode == 'inference':
-        inference(config, model, tokenizer)
+        generator = Generator(config, model, tokenizer)
+        generator.inference()
+
 
 
 if __name__ == '__main__':

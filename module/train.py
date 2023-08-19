@@ -1,7 +1,9 @@
 import time, math, json, torch
 import torch.nn as nn
 import torch.amp as amp
-import torch.optim as optim
+from torch.optim import AdamW
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+
 
 
 
@@ -21,8 +23,8 @@ class Trainer:
         self.train_dataloader = train_dataloader
         self.valid_dataloader = valid_dataloader
 
-        self.optimizer = optim.AdamW(self.model.parameters(), lr=config.lr)
-        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min')
+        self.optimizer = AdamW(self.model.parameters(), lr=config.lr)
+        self.scheduler = ReduceLROnPlateau(self.optimizer, 'min')
 
         self.early_stop = config.early_stop
         self.patience = config.patience        
@@ -109,10 +111,12 @@ class Trainer:
             with torch.autocast(device_type=self.device.type, dtype=torch.float16):
                 loss = self.model(src, trg).loss
                 loss = loss / self.iters_to_accumulate
+
             #Backward Loss
             self.scaler.scale(loss).backward()        
             
             if (idx + 1) % self.iters_to_accumulate == 0:
+
                 #Gradient Clipping
                 self.scaler.unscale_(self.optimizer)
                 nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=self.clip)
@@ -125,7 +129,8 @@ class Trainer:
             epoch_loss += loss.item()
         
         epoch_loss = round(epoch_loss / len(self.train_dataloader), 3)
-        epoch_ppl = round(math.exp(epoch_loss), 3)    
+        epoch_ppl = round(math.exp(epoch_loss), 3)  
+
         return epoch_loss, epoch_ppl
     
 
@@ -143,4 +148,5 @@ class Trainer:
         
         epoch_loss = round(epoch_loss / len(self.valid_dataloader), 3)
         epoch_ppl = round(math.exp(epoch_loss), 3)        
+
         return epoch_loss, epoch_ppl

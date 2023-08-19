@@ -27,7 +27,7 @@ class Dataset(torch.utils.data.Dataset):
         src = self.tokenizer.encode(src).ids
         trg = self.tokenizer.encode(trg).ids
         
-        return src, trg
+        return torch.LongTensor(src), torch.LongTensor(trg)
 
 
 
@@ -35,30 +35,31 @@ class Collator(object):
     def __init__(self, pad_id):
         self.pad_id = pad_id
 
-    def __call__(self, batch):
-        src_batch, trg_batch = [], []
-        
-        for src, trg in batch:
-            src_batch.append(torch.LongTensor(src))
-            trg_batch.append(torch.LongTensor(trg))
-        
-        src_batch = pad_sequence(src_batch,
-                                 batch_first=True,
-                                 padding_value=self.pad_id)
-        
-        trg_batch = pad_sequence(trg_batch, 
-                                 batch_first=True, 
-                                 padding_value=self.pad_id)
-        
-        return {'src': src_batch, 
-                'trg': trg_batch}
 
+    def __call__(self, batch):
+        src_batch, trg_batch = zip(*batch)
+        
+        return {'src': self.pad_batch(src_batch), 
+                'trg': self.pad_batch(trg_batch)}
+
+
+    def pad_batch(self, batch):
+        return pad_sequence(
+            batch, 
+            batch_first=True,
+            padding_value=self.pad_id
+        )
 
 
 def load_dataloader(config, tokenizer, split):
+    is_train = split == 'train'
+    batch_size = config.batch_size if is_train \
+                 else config.batch_size // 4
 
-    return DataLoader(Dataset(tokenizer, split), 
-                      batch_size=config.batch_size, 
-                      shuffle=True if config.mode == 'train' else False,
-                      collate_fn=Collator(config.pad_id),
-                      num_workers=2)
+    return DataLoader(
+        Dataset(tokenizer, split), 
+        batch_size=config.batch_size, 
+        shuffle=True if is_train else False,
+        collate_fn=Collator(config.pad_id),
+        num_workers=2
+    )

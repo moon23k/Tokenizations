@@ -6,15 +6,17 @@ from collections import namedtuple
 
 
 
-class Search:
-    def __init__(self, config, model):
+
+class Generator:
+    def __init__(self, config, model, tokenizer):
         super(Search, self).__init__()
         
         self.model = model
-        self.device = model.device
+        self.tokenizer = tokenizer
+        self.device = config.device
 
-        self.max_len = 512
         self.beam_size = 4
+        self.max_len = config.max_len
 
         self.bos_id = config.bos_id
         self.eos_id = config.eos_id

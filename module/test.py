@@ -1,10 +1,10 @@
-import json, math, time, torch, evaluate
+import json, torch, evaluate
 from module.search import Search
 
 
 
 class Tester:
-    def __init__(self, config, model, tokenizer, test_dataloader, test_volumn=10):
+    def __init__(self, config, model, tokenizer, test_dataloader):
         super(Tester, self).__init__()
         
         self.model = model
@@ -14,8 +14,6 @@ class Tester:
         
         self.path = config.path
         self.device = config.device
-        self.test_volumn = test_volumn
-        assert test_volumn <= len(self.dataloader)
         
         self.metric_name = 'BLEU'
         self.metric_module = evaluate.load('bleu')
@@ -24,17 +22,13 @@ class Tester:
 
     def test(self):
         self.model.eval()
+        tot_len = len(self.dataloader)
         greedy_score, beam_score = 0, 0
         tot_data_len = len(self.dataloader)
 
-        volumn_cnt = 0
         print(f"Test on {self.path} Model")
         with torch.no_grad():
             for batch in self.dataloader:
-
-                if volumn_cnt == self.test_volumn:
-                    break
-                volumn_cnt += 1
                
                 src = batch['src'].to(self.device)
                 trg = batch['trg'].squeeze().tolist()
@@ -45,11 +39,11 @@ class Tester:
                 greedy_score += self.metric_score(greedy_pred, trg)
                 beam_score += self.metric_score(beam_pred, trg)
 
-        greedy_score = round(greedy_score/self.test_volumn, 2)
-        beam_score = round(beam_score/self.test_volumn, 2)
+        greedy_score = round(greedy_score / tot_len, 2)
+        beam_score = round(beam_score / tot_len, 2)
         
-        print(f"---Greedy Score: {greedy_score}")
-        print(f"--- Beam  Score: {beam_score}")
+        print(f"--- Greedy Score: {greedy_score}")
+        print(f"---  Beam  Score: {beam_score}")
                 
 
 

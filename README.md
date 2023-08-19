@@ -59,59 +59,36 @@ To address this issue, this repository covers comparative analysis of the impact
 
 | Small Model Setup | Big Model Setup | Training Setup |
 |---|---|---|
-| Embedding Dimension: 256 | Embedding Dimension: 512 | N_Epochs: 10 |
-| Hidden Dimension: 256 | Hidden Dimension: 512 | LR: 5e-4 |
-| FFN Dimension: 512 | FFN Dimension: 1024 | iters_to_accumulate: 4 |
-| N Heads: 8 | N Heads: 8 | Gradient Clip Max Norm: 1 |
-| N Layers: 3 | N Layers: 3 | Apply AMP: True |
+| `Embedding Dimension:` 256 | `Embedding Dimension:` 512 | `N_Epochs:` 10 |
+| `Hidden Dimension:` 256 | `Hidden Dimension:` 512 | `LR:` 5e-4 |
+| `FFN Dimension:` 512 | `FFN Dimension:` 1024 | `iters_to_accumulate:` 4 |
+| `N Heads:` 8 | `N Heads:` 8 | `Gradient Clip Max Norm:` 1 |
+| `N Layers:` 3 | `N Layers:` 3 | `Apply AMP:` True |
 
 
 </br></br>
 
 ## Results
 
-> **Small Model**
-
-| &emsp; Tokenizer Type &emsp; | &emsp; Vocab Size &emsp; | &emsp; Greedy Score &emsp; | &emsp; Beam Score &emsp; |
+| &emsp; Tokenizer Type &emsp; | &emsp; Vocab Size &emsp; | &emsp; Small Model Score &emsp; | &emsp; Big Model Score &emsp; |
 |:---:|:---:|:---:|:---:|
-| Word Level |  5k | 15.36 | 11.94 |
-| -          | 15k | 14.39 | 11.49 |
-| -          | 30k | 13.06 | 11.42 |
-| Word Piece |  5k | **22.72** | **21.50** |
-| -          | 15k | 14.42 | 13.75 |
-| -          | 30k | 13.31 | 10.53 |
-| BPE        |  5k | 12.83 | 11.84 |
-| -          | 15k | 13.78 | 10.53 |
-| -          | 30k | 14.63 | 11.00 |
-| Unigram    |  5k | **11.33** | 11.05 |
-| -          | 15k | 11.44 |  **9.08** |
-| -          | 30k | 14.23 | 11.16 |
+| Word Level |  5k | 15.36 | 14.05 |
+| -          | 15k | 14.39 | 13.82 |
+| -          | 30k | 13.06 |  8.73 |
+| Word Piece |  5k | 22.72 | 27.75 |
+| -          | 15k | 14.42 | 19.13 |
+| -          | 30k | 13.31 |  0.00 |
+| BPE        |  5k | 12.83 | 16.20 |
+| -          | 15k | 13.78 |  8.88 |
+| -          | 30k | 14.63 | 14.29 |
+| Unigram    |  5k | 11.33 | 17.06 |
+| -          | 15k | 11.44 | 13.06 |
+| -          | 30k | 14.23 |  0.14 |
 
 <br>
 
 In experiments based on the Small model, the performance of Word Level and Word Piece decreases as the vocab size increases, while the performance of BPE and Unigram tends to improve as the vocab size increases. Under the same conditions, the Word Piece method with vocab as much as 5k showed the best performance, and there is not a large deviation from the other methods. 
 The small performance deviation can be attributed to the fact that the model size is small and relatively insensitive.
-
-
-<br><br>
-> **Big Model**
-
-| &emsp; Tokenizer Type &emsp; | &emsp; Vocab Size &emsp; | &emsp; Greedy Score &emsp; | &emsp; Beam Score &emsp; |
-|:---:|:---:|:---:|:---:|
-| Word Level |  5k | 14.05 | 11.90 |
-| -          | 15k | 13.82 | 12.52 |
-| -          | 30k |  8.73 |  7.41 |
-| Word Piece |  5k | **27.75** | **23.61** |
-| -          | 15k | 19.13 | 14.35 |
-| -          | 30k |  **0.00** |  **0.00** |
-| BPE        |  5k | 16.20 | 11.44 |
-| -          | 15k |  8.88 |  6.33 |
-| -          | 30k | 14.29 |  9.65 |
-| Unigram    |  5k | 17.06 | 15.79 |
-| -          | 15k | 13.06 | 10.09 |
-| -          | 30k |  0.14 |  0.05 |
-
-<br>
 
 In the experiments conducted on the Big model, the 5k-sized WP also showed the best performance. And it is also possible to confirm that the tendency found in the previous Small Model-based experiment is maintained to some extent. However, there is a large variation in performance by vocab size, which seems to be the main reason that the size of the model increases and becomes more sensitive.
 

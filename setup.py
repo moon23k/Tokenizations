@@ -1,10 +1,23 @@
-import os, json, argparse
+import os, yaml, json, argparse
 from datasets import load_dataset
+
 from tokenizers import Tokenizer, normalizers
 from tokenizers.pre_tokenizers import Whitespace
-from tokenizers.normalizers import NFD, Lowercase, StripAccents
-from tokenizers.models import WordLevel, BPE, WordPiece, Unigram
-from tokenizers.trainers import WordLevelTrainer, BpeTrainer, WordPieceTrainer, UnigramTrainer
+
+from tokenizers.normalizers import (
+    NFD, Lowercase, StripAccents
+)
+
+from tokenizers.models import (
+    WordLevel, BPE, WordPiece, Unigram
+)
+
+from tokenizers.trainers import (
+    WordLevelTrainer, 
+    BpeTrainer, 
+    WordPieceTrainer, 
+    UnigramTrainer
+)
 
 
 
@@ -50,7 +63,8 @@ def select_data(orig_data, volumn=101100):
 def save_data(data_obj):
     #split data into train/valid/test sets
     train, valid, test = data_obj[:-1100], data_obj[-1100:-100], data_obj[-100:]
-    data_dict = {k:v for k, v in zip(['train', 'valid', 'test'], [train, valid, test])}
+    keys = ['train', 'valid', 'test']
+    data_dict = {k:v for k, v in zip(keys, [train, valid, test])}
 
     for key, val in data_dict.items():
         with open(f'data/{key}.json', 'w') as f:
@@ -63,37 +77,70 @@ def train_tokenizer(tokenizer_type, vocab_size):
     assert os.path.exists(corpus_path)
     os.makedirs(f'tokenizer/{tokenizer_type}', exist_ok=True)
 
+    assert os.path.exists('config.yaml')
+    with open('config.yaml', 'r') as f:
+        vocab_config = yaml.load(f, Loader=yaml.FullLoader)['vocab']
+
     _vocab_size = int(vocab_size[:-1]) * 1000
-    special_tokens = ['[PAD]', '[UNK]', '[BOS]', '[EOS]']
+
+    unk_token = vocab_config['unk_token']
+    special_tokens=[vocab_config['pad_token'], 
+                    vocab_config['unk_token'],
+                    vocab_config['bos_token'],
+                    vocab_config['eos_token']]
 
 
     if tokenizer_type == 'WL':
-        tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
-        tokenizer.normalizer = normalizers.Sequence([NFD(), Lowercase(), StripAccents()])
+        tokenizer = Tokenizer(WordLevel(unk_token=unk_token))
+        tokenizer.normalizer = normalizers.Sequence(
+            [NFD(), Lowercase(), StripAccents()]
+        )
         tokenizer.pre_tokenizer = Whitespace()
-        trainer = WordLevelTrainer(vocab_size=_vocab_size, min_frequency=2, special_tokens=special_tokens)
+        trainer = WordLevelTrainer(
+            vocab_size=_vocab_size, 
+            min_frequency=2, 
+            special_tokens=special_tokens
+        )
     
     elif tokenizer_type == 'BPE':
-        tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
-        tokenizer.normalizer = normalizers.Sequence([NFD(), Lowercase(), StripAccents()])
+        tokenizer = Tokenizer(BPE(unk_token=unk_token))
+        tokenizer.normalizer = normalizers.Sequence(
+            [NFD(), Lowercase(), StripAccents()]
+        )
         tokenizer.pre_tokenizer = Whitespace()
-        trainer = BpeTrainer(vocab_size=_vocab_size, min_frequency=2, special_tokens=special_tokens)
+        trainer = BpeTrainer(
+            vocab_size=_vocab_size, 
+            min_frequency=2, 
+            special_tokens=special_tokens
+        )
     
     elif tokenizer_type == 'WP':
-        tokenizer = Tokenizer(WordPiece(unk_token="[UNK]"))
-        tokenizer.normalizer = normalizers.Sequence([NFD(), Lowercase(), StripAccents()])
+        tokenizer = Tokenizer(WordPiece(unk_token=unk_token))
+        tokenizer.normalizer = normalizers.Sequence(
+            [NFD(), Lowercase(), StripAccents()]
+        )
         tokenizer.pre_tokenizer = Whitespace()
-        trainer = WordPieceTrainer(vocab_size=_vocab_size, special_tokens=special_tokens)
+        trainer = WordPieceTrainer(
+            vocab_size=_vocab_size, 
+            special_tokens=special_tokens
+        )
 
     elif tokenizer_type == 'UNI':
         tokenizer = Tokenizer(Unigram())
-        tokenizer.normalizer = normalizers.Sequence([NFD(), Lowercase(), StripAccents()])
+        tokenizer.normalizer = normalizers.Sequence(
+            [NFD(), Lowercase(), StripAccents()]
+        )
         tokenizer.pre_tokenizer = Whitespace()
-        trainer = UnigramTrainer(vocab_size=_vocab_size, unk_token='[UNK]', special_tokens=special_tokens)
+        trainer = UnigramTrainer(
+            vocab_size=_vocab_size, 
+            unk_token=unk_token, 
+            special_tokens=special_tokens
+        )
 
 
     tokenizer.train(files=[corpus_path], trainer=trainer)
-    tokenizer.save(f"tokenizer/{tokenizer_type}/{tokenizer_type}_{vocab_size}.json")
+    tokenizer.save(f"tokenizer/{tokenizer_type}/\
+                    {tokenizer_type}_{vocab_size}.json")
 
 
 

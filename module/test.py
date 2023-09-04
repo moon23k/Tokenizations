@@ -1,5 +1,5 @@
 import json, torch, evaluate
-from module.search import Search
+from module import Search
 
 
 
@@ -13,46 +13,69 @@ class Tester:
         self.search = Search(config, self.model)
         
         self.path = config.path
+        self.bos_id = config.bos_id
         self.device = config.device
+        self.max_len = config.max_len
         
-        self.metric_name = 'BLEU'
         self.metric_module = evaluate.load('bleu')
 
 
 
     def test(self):
+        score = 0.0         
         self.model.eval()
-        tot_len = len(self.dataloader)
-        greedy_score, beam_score = 0, 0
-        tot_data_len = len(self.dataloader)
 
-        print(f"Test on {self.path} Model")
         with torch.no_grad():
             for batch in self.dataloader:
-               
-                src = batch['src'].to(self.device)
-                trg = batch['trg'].squeeze().tolist()
-        
-                greedy_pred = self.search.greedy_search(src).tolist()
-                beam_pred = self.search.beam_search(src)
+                x = batch['src'].to(self.device)
+                y = self.tokenize(batch['trg'])
+
+                pred = self.predict(x)
+                pred = self.tokenize(pred)
                 
-                greedy_score += self.metric_score(greedy_pred, trg)
-                beam_score += self.metric_score(beam_pred, trg)
+                score += self.evaluate(pred, y)
 
-        greedy_score = round(greedy_score / tot_len, 2)
-        beam_score = round(beam_score / tot_len, 2)
-        
-        print(f"--- Greedy Score: {greedy_score}")
-        print(f"---  Beam  Score: {beam_score}")
+        txt = f"TEST Result on {self.task.upper()} with {self.model_type.upper()} model"
+        txt += f"\n-- Score: {round(score/len(self.dataloader), 2)}\n"
+        print(txt)
+
+
+    def tokenize(self, batch):
+        return [self.tokenizer.decode(x) for x in batch.tolist()]
+
+
+    def predict(self, x):
+
+        batch_size = x.size(0)
+        pred = torch.zeros((batch_size, self.max_len))
+        pred = pred.type(torch.LongTensor).to(self.device)
+        pred[:, 0] = self.bos_id
+
+        e_mask = self.model.pad_mask(x)
+        memory = self.model.encode(x, e_mask)
+
+        for idx in range(1, self.max_len):
+            y = pred[:, :idx]
+            d_out = self.model.decode(y, memory, e_mask, None)
+
+            logit = self.model.generator(d_out)
+            pred[:, idx] = logit.argmax(dim=-1)[:, -1]
+
+        return pred
                 
 
 
-    def metric_score(self, pred, label):
-        pred = self.tokenizer.decode(pred)
-        label = self.tokenizer.decode(label)
-        
-        if pred == "":
+    def evaluate(self, pred, label):
+
+        pred = self.tokenize(pred)
+        if pred == ['' for _ in range(len(pred))]:
             return 0.0
-        else:
-            score = self.metric_module.compute(predictions=[pred], references=[[label]])['bleu']
-            return (score * 100)
+
+        label = self.tokenize(label)
+
+        score = self.metric_module.compute(
+            predictions=pred, 
+            references =[[l] for l in label]
+        )['bleu']
+
+        return score * 100

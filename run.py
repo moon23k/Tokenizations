@@ -18,6 +18,7 @@ def set_seed(SEED=42):
     import random
     import numpy as np
     import torch.backends.cudnn as cudnn
+
     random.seed(SEED)
     np.random.seed(SEED)
     torch.manual_seed(SEED)
@@ -31,6 +32,14 @@ def set_seed(SEED=42):
 class Config(object):
     def __init__(self, args):    
 
+        #Get Config Attributes from config.yaml file
+        with open('config.yaml', 'r') as f:
+            params = yaml.load(f, Loader=yaml.FullLoader)
+            for group in params.keys():
+                for key, val in params[group].items():
+                    setattr(self, key, val)
+
+
         self.mode = args.mode
         self.tokenizer_type = args.tokenizer_type.upper()
         self.path = f'{self.tokenizer_type}_{args.vocab_size}'
@@ -38,36 +47,13 @@ class Config(object):
 
         os.makedirs(f'ckpt/{self.tokenizer_type}', exist_ok=True)
         self.ckpt = f"ckpt/{self.tokenizer_type}/{self.path}.pt"
-
         self.tokenizer_path = f"tokenizer/{self.tokenizer_type}/{config.path}.json"
 
-        #Tokenizer Configs
-        self.pad_id = 0
-        self.unk_id = 1
-        self.bos_id = 2
-        self.eos_id = 3
-
-        #Training Configs
-        self.n_epochs = 10
-        self.lr = 5e-4
-        self.clip = 1
-        self.early_stop = True
-        self.patience = 3
-        self.iters_to_accumulate = 4
-        self.batch_size = 128
-
-        #Model Configs
-        self.emb_dim = 512
-        self.hidden_dim = 512
-        self.pff_dim = 1024
-        self.n_heads = 8
-        self.n_layers = 6
-        self.dropout_ratio = 0.1
-
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        if self.mode == 'inference':
-            self.search_method = args.search
-            self.device = torch.device('cpu')
+        use_cuda = torch.cuda.is_available()
+        self.device_type = 'cuda' \
+                           if use_cuda and self.mode != 'inference' \
+                           else 'cpu'
+        self.device = torch.device(self.device_type)
 
 
     def print_attr(self):
@@ -79,13 +65,11 @@ class Config(object):
 def load_tokenizer(config):
     assert os.path.exists(config.tokenizer_path)
 
-    tokenizer = Tokenizer.from_file(config.tokenizer_path)
+    tokenizer = Tokenizer.from_file(config.tokenizer_path)    
     tokenizer.post_processor = TemplateProcessing(
-        single="[BOS] $A [EOS]",
-        special_tokens=[
-            ("[BOS]", tokenizer.token_to_id("[BOS]")),
-            ("[EOS]", tokenizer.token_to_id("[EOS]"))
-            ]
+        single=f"{config.bos_token} $A {config.eos_token}",
+        special_tokens=[(config.bos_token, config.bos_id), 
+                        (config.eos_token, config.eos_id)]
         )
     
     return tokenizer

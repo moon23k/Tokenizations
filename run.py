@@ -1,4 +1,4 @@
-import os, argparse, torch
+import os, yaml, argparse, torch
 
 from tokenizers import Tokenizer
 from tokenizers.processors import TemplateProcessing
@@ -36,6 +36,10 @@ class Config(object):
         with open('config.yaml', 'r') as f:
             params = yaml.load(f, Loader=yaml.FullLoader)
             for group in params.keys():
+                if (args.model == 'small') and (group == 'base_model'):
+                    continue
+                if (args.model == 'base') and (group == 'small_model'):
+                    continue
                 for key, val in params[group].items():
                     setattr(self, key, val)
 
@@ -47,7 +51,7 @@ class Config(object):
 
         os.makedirs(f'ckpt/{self.tokenizer_type}', exist_ok=True)
         self.ckpt = f"ckpt/{self.tokenizer_type}/{self.path}.pt"
-        self.tokenizer_path = f"tokenizer/{self.tokenizer_type}/{config.path}.json"
+        self.tokenizer_path = f"tokenizer/{self.tokenizer_type}/{self.path}.json"
 
         use_cuda = torch.cuda.is_available()
         self.device_type = 'cuda' \
@@ -71,7 +75,7 @@ def load_tokenizer(config):
         special_tokens=[(config.bos_token, config.bos_id), 
                         (config.eos_token, config.eos_id)]
         )
-    
+    print(f"{config.tokenizer_type}_{str(config.vocab_size)[:2]}k Tokenizer has loaded")
     return tokenizer
 
 
@@ -103,12 +107,14 @@ def main(config):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-mode', required=True)
+    parser.add_argument('-model', required=True)
     parser.add_argument('-tokenizer_type', required=True)
     parser.add_argument('-vocab_size', required=True)
     
     args = parser.parse_args()
     assert args.mode in ['train', 'test', 'inference']
+    assert args.model in ['small', 'base']
     assert args.tokenizer_type.upper() in ['WL', 'WP', 'BPE', 'UNI']
-    assert args.vocab_size in ['5k', '10k', '15k']
+    assert args.vocab_size in ['10k', '20k', '30k']
     
     main(args)

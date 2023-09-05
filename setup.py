@@ -139,8 +139,9 @@ def train_tokenizer(tokenizer_type, vocab_size):
 
 
     tokenizer.train(files=[corpus_path], trainer=trainer)
-    tokenizer.save(f"tokenizer/{tokenizer_type}/\
-                    {tokenizer_type}_{vocab_size}.json")
+    tokenizer.save(
+        f"tokenizer/{tokenizer_type}/{tokenizer_type}_{vocab_size}.json"
+    )
 
 
 
@@ -169,7 +170,7 @@ if __name__ == '__main__':
     parser.add_argument('-vocab_size', required=True)
     
     tt_lst = ['all', 'WL', 'WP', 'BPE', 'UNI']
-    vs_lst = ['all', '5k', '10k', '15k']
+    vs_lst = ['all', '10k', '20k', '30k']
 
     args = parser.parse_args()
     assert args.tokenizer_type in tt_lst

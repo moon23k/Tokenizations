@@ -8,13 +8,6 @@ def clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for _ in range(N)])
 
 
-def shift_trg(x):
-    return x[:, :-1], x[:, 1:]
-
-
-def generate_square_subsequent_mask(sz):
-    return torch.triu(torch.full((sz, sz), float('-inf')), diagonal=1)
-
 
 class PositionalEncoding(nn.Module):
     def __init__(self, config, max_len=512):
@@ -130,15 +123,29 @@ class Transformer(nn.Module):
         self.criterion = nn.CrossEntropyLoss()
         self.out = namedtuple('Out', 'logit loss')
 
-        
-        
+
+    def pad_mask(self, x):
+        return x == self.pad_id
+    
+
+    def dec_mask(self, x):
+        sz = x.size(1)
+        mask = torch.triu(torch.full((sz, sz), float('-inf')), diagonal=1)
+        return mask.to(self.device)
+
+
+    @staticmethod
+    def shift_trg(x):
+        return x[:, :-1], x[:, 1:]
+
+
     def forward(self, src, trg):
-        trg, label = shift_trg(trg)
+        trg, label = self.shift_trg(trg)
 
         #Masking
-        src_pad_mask = src == self.pad_id
-        trg_pad_mask = trg == self.pad_id
-        trg_mask = generate_square_subsequent_mask(trg.size(1)).to(self.device)
+        src_pad_mask = self.pad_mask(src)
+        trg_pad_mask = self.pad_mask(trg)
+        trg_mask = self.dec_mask(trg)
         
         #Actual Processing
         memory = self.encoder(src, src_key_padding_mask=src_pad_mask)

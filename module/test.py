@@ -1,5 +1,4 @@
 import json, torch, evaluate
-from module import Search
 
 
 
@@ -10,9 +9,9 @@ class Tester:
         self.model = model
         self.tokenizer = tokenizer
         self.dataloader = test_dataloader
-        self.search = Search(config, self.model)
         
         self.path = config.path
+        self.pad_id = config.pad_id
         self.bos_id = config.bos_id
         self.device = config.device
         self.max_len = config.max_len
@@ -35,7 +34,7 @@ class Tester:
                 
                 score += self.evaluate(pred, y)
 
-        txt = f"TEST Result on {self.task.upper()} with {self.model_type.upper()} model"
+        txt = f"TEST Result"
         txt += f"\n-- Score: {round(score/len(self.dataloader), 2)}\n"
         print(txt)
 
@@ -47,7 +46,7 @@ class Tester:
     def predict(self, x):
 
         batch_size = x.size(0)
-        pred = torch.zeros((batch_size, self.max_len))
+        pred = torch.zeros((batch_size, self.max_len)).fill_(self.pad_id)
         pred = pred.type(torch.LongTensor).to(self.device)
         pred[:, 0] = self.bos_id
 
@@ -56,7 +55,7 @@ class Tester:
 
         for idx in range(1, self.max_len):
             y = pred[:, :idx]
-            d_out = self.model.decode(y, memory, e_mask, None)
+            d_out = self.model.decode(y, memory, e_mask, None, None)
 
             logit = self.model.generator(d_out)
             pred[:, idx] = logit.argmax(dim=-1)[:, -1]
@@ -67,11 +66,8 @@ class Tester:
 
     def evaluate(self, pred, label):
 
-        pred = self.tokenize(pred)
         if pred == ['' for _ in range(len(pred))]:
             return 0.0
-
-        label = self.tokenize(label)
 
         score = self.metric_module.compute(
             predictions=pred, 

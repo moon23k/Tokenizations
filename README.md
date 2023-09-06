@@ -55,44 +55,85 @@ To address this issue, this repository covers comparative analysis of the impact
 </br></br>
 
 
-## Setups
+## Experimental Setups
 
-| Small Model Setup | Big Model Setup | Training Setup |
-|---|---|---|
-| `Embedding Dimension:` 256 | `Embedding Dimension:` 512 | `N_Epochs:` 10 |
-| `Hidden Dimension:` 256 | `Hidden Dimension:` 512 | `LR:` 5e-4 |
-| `FFN Dimension:` 512 | `FFN Dimension:` 1024 | `iters_to_accumulate:` 4 |
-| `N Heads:` 8 | `N Heads:` 8 | `Gradient Clip Max Norm:` 1 |
-| `N Layers:` 3 | `N Layers:` 3 | `Apply AMP:` True |
-
+| Model Setup | Training Setup |
+|---|---|
+| &emsp; **`Embedding Dimension:`** &nbsp; 256 &emsp; | &emsp; **`N_Epochs:`** &nbsp; 10 |
+| &emsp; **`Hidden Dimension:`** &nbsp; 256           | &emsp; **`LR:`** &nbsp; 5e-4 |
+| &emsp; **`FFN Dimension:`** &nbsp; 512              | &emsp; **`iters_to_accumulate:`** &nbsp; 4 &emsp; |
+| &emsp; **`N Heads:`** &nbsp; 8                      | &emsp; **`Gradient Clip Max Norm:`** &nbsp; 1 &emsp; |
+| &emsp; **`N Layers:`** &nbsp; 3                     | &emsp; **`Apply AMP:`** &nbsp; True |
 
 </br></br>
 
-## Results
+## BLEU Evaluation Test
 
-| &emsp; Tokenizer Type &emsp; | &emsp; Vocab Size &emsp; | &emsp; Small Model Score &emsp; | &emsp; Big Model Score &emsp; |
+| &emsp; Tokenizer Type &emsp; | &emsp; 10k Model Score &emsp; | &emsp; 20k Model Score &emsp; | &emsp; 30k Model Score &emsp; |
 |:---:|:---:|:---:|:---:|
-| Word Level |  5k | 15.36 | 14.05 |
-| -          | 15k | 14.39 | 13.82 |
-| -          | 30k | 13.06 |  8.73 |
-| Word Piece |  5k | 22.72 | 27.75 |
-| -          | 15k | 14.42 | 19.13 |
-| -          | 30k | 13.31 |  0.00 |
-| BPE        |  5k | 12.83 | 16.20 |
-| -          | 15k | 13.78 |  8.88 |
-| -          | 30k | 14.63 | 14.29 |
-| Unigram    |  5k | 11.33 | 17.06 |
-| -          | 15k | 11.44 | 13.06 |
-| -          | 30k | 14.23 |  0.14 |
+| **`Word Level`** | 16.45 | 15.74 | 14.89 |
+| **`Word Piece`** | 23.04 | 14.09 | 14.46 |
+| **`BPE`**        | 14.22 | 14.90 | 13.23 |
+| **`Unigram`**    | 14.16 | 15.47 | 14.77 |
 
+<br><br>
+
+## Generation Test
 <br>
 
-In experiments based on the Small model, the performance of Word Level and Word Piece decreases as the vocab size increases, while the performance of BPE and Unigram tends to improve as the vocab size increases. Under the same conditions, the Word Piece method with vocab as much as 5k showed the best performance, and there is not a large deviation from the other methods. 
-The small performance deviation can be attributed to the fact that the model size is small and relatively insensitive.
+> **Word-Level Tokenization Model**
 
-In the experiments conducted on the Big model, the 5k-sized WP also showed the best performance. And it is also possible to confirm that the tendency found in the previous Small Model-based experiment is maintained to some extent. However, there is a large variation in performance by vocab size, which seems to be the main reason that the size of the model increases and becomes more sensitive.
+| Vocab_size | Sequence_Type | Sequence |
+| :---: | :---: | :--- |
+| **`10k`**  | Generated        | nun sind die vorschriften , die , die , bei denen und fur verwendet werden . |
+| -          | Back Translation |  now the regulations are used for which , which , where and for . |
+| **`20k`**  | Generated        | es gibt vorschriften , die nach , die dann , wie aus substanzen in der industrie verwendet werden .|
+| -          | Back Translation | There are regulations that are made according to how substances are used in industry. |
+| **`30k`**  | Generated        | jetzt sind regelungen zur , die sich fur hinaus , die , als fur dieser sektor eingesetzt werden . |
+| -          | Back Translation | There are now regulations in place that are intended to be used in this sector. |
 
-</br></br>
+<br><br>
+
+> **Word-Piece Tokenization Model**
+
+| Vocab_size | Sequence_Type | Sequence |
+| :---: | :---: | :--- |
+| **`10k`**  | Generated        | es gibt regelungen , die die mit bio ##met ##ho ##chs ##t ##grenzen , die mit der freis ##etzung von pfl ##anzen und energie fur die industrie verwendet ##en menge ##n . |
+| -          | Back Translation | there are regulations that limit the bio ##met ##ho ##chs ##t ##t ##t ##t ##s with the release of plants ## and energy used for the industry ## amount ##n . |
+| **`20k`**  | Generated        | jetzt , was die quantitative ##n organis ##che ##idung ##en fur die organis ##ierung von brenn ##stoffe , die mit brenn ##stoffe und auch fur chem ##ische anlagen in die industrie verwendeten art verwendet werden . |
+| -          | Back Translation | Now what the quantitative ##n organ ##che ##idung ##en for the organization ##ing of fuel ##materials used with fuel ##materials and also for chemical ##plants in the industry become . |
+| **`30k`**  | Generated        | nun gibt es regeln , die sich aus organis ##atorischen mitteln aus dem organis ##chen , die in der industrie von brennstoff ##nutzung dieser branche stammen , sowie fur die stoffe . |
+| -          | Back Translation | Now there are rules that come from the organizational resources that come from the industry's fuel use in this industry, as well as for the materials. |
+
+<br><br>
+
+> **BPE Tokenization Model**
+
+| Vocab_size | Sequence_Type | Sequence |
+| :---: | :---: | :--- |
+| **`10k`** | Generated        | es gibt vorschriften , die auf die freiwill ige operation en und die , wie es mit brenn stoffen , die fre ise tzung von brenn stoffen , wie sie fur die industrie verwendet werden . |
+| -         | Back Translation | There are regulations that apply to voluntary operations and how to deal with fuels, the release of fuels used for industry. |
+| **`20k`** | Generated        | jetzt sind vorschriften zur flucht iger mittel aus flucht iger anlage ystem en , die sich als brennstoff be th altung im bereich der brennstoff bekampfung von brennstoff und aus dieser branche nieder gelassen haben . |
+| -         | Back Translation | There are now regulations for the escape of volatile substances from volatile plant systems that have established themselves as fuel containment in the field of fuel control and from this industry. |
+| **`30k`** | Generated        | es gibt regelungen , die fur flucht nach wie vor die flucht nach einwanderungs verbindungen mit den stoffen , die fur die stoffe in dieser branche verwendet werden . |
+| -         | Back Translation | There are regulations in place for escape after immigration connections with the substances that are used for the substances in this industry. |
+
+<br><br>
+
+> **Unigram Tokenization Model**
+
+| Vocab_size | Sequence_Type | Sequence |
+| :---: | :---: | :--- |
+| **`10k`** | Generated        | e s gib t regelung en , die von der versicherung en , die fur diese art von i o be r n i e s , wie fur die in der industrie vorgesehen en form vorgesehen en regelung en . |
+| -         | Back Translation | There are regulations that are provided by the insurance companies for this type of i o r n ie s, as for the form provided for in the industry. |
+| **`20k`** | Generated        | derzeit gib t e s regeln , die fur die verbreitung von organische n organische n verbindung en , die sich mit dem brennstoff zu tun , was diese r art der brennstoffe eingesetzt werden . |
+| -         | Back Translation | Currently there are rules governing the distribution of organic n organic n compounds that have to do with the fuel, what this type of fuel is used for. |
+| **`30k`** | Generated        | e s gib t regeln , die fur die fluchtige n organische r und organische r beihilfen , die sie fur fossile stoffe in betracht ziehen . |
+| -         | Back Translation | There are rules governing volatile organic compounds and organic compounds that they consider for fossil fuels. |
+
+<br><br>
+
+
 
 ## How to Use
 ```
@@ -101,8 +142,8 @@ git clone https://github.com/moon23k/Tokenizers.git
 
 ```
 cd Tokenizers
-python3 setup.py
-python3 run.py
+python3 setup.py -tokenizer_type ['all', 'WL', 'WP', 'BPE', 'UNI'] -vocab_size [10k, 20k, 30k]
+python3 run.py -mode [train, test, inference] -tokenizer_type ['WL', 'WP', 'BPE', 'UNI'] -vocab_size [10k, 20k, 30k]
 ```
 </br>
 

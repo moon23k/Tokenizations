@@ -9,23 +9,13 @@ vocab:
     eos_token: "[EOS]"
 
 
-model_common:
+model:
     n_heads: 8
     dropout_ratio: 0.1
     max_len: 512
-
-
-small_model:
     emb_dim: 256
     hidden_dim: 256
     pff_dim: 512
-    n_layers: 3
-
-
-base_model:
-    emb_dim: 512
-    hidden_dim: 512
-    pff_dim: 2048
     n_layers: 3
 
 

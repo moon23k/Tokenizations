@@ -36,10 +36,6 @@ class Config(object):
         with open('config.yaml', 'r') as f:
             params = yaml.load(f, Loader=yaml.FullLoader)
             for group in params.keys():
-                if (args.model == 'small') and (group == 'base_model'):
-                    continue
-                if (args.model == 'base') and (group == 'small_model'):
-                    continue
                 for key, val in params[group].items():
                     setattr(self, key, val)
 
@@ -107,13 +103,11 @@ def main(config):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-mode', required=True)
-    parser.add_argument('-model', required=True)
     parser.add_argument('-tokenizer_type', required=True)
     parser.add_argument('-vocab_size', required=True)
     
     args = parser.parse_args()
     assert args.mode in ['train', 'test', 'inference']
-    assert args.model in ['small', 'base']
     assert args.tokenizer_type.upper() in ['WL', 'WP', 'BPE', 'UNI']
     assert args.vocab_size in ['10k', '20k', '30k']
     

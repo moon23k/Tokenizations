@@ -67,7 +67,9 @@ To address this issue, this repository covers comparative analysis of the impact
 
 </br></br>
 
-## BLEU Evaluation Test
+## Evaluation
+
+> **BLEU Score**
 
 | &emsp; Tokenizer Type &emsp; | &emsp; 10k Model Score &emsp; | &emsp; 20k Model Score &emsp; | &emsp; 30k Model Score &emsp; |
 |:---:|:---:|:---:|:---:|
@@ -76,12 +78,18 @@ To address this issue, this repository covers comparative analysis of the impact
 | **`BPE`**        | 14.22 | 14.90 | 13.23 |
 | **`Unigram`**    | 14.16 | 15.47 | 14.77 |
 
-<br><br>
-
-## Generation Test
 <br>
 
-> **Word-Level Tokenization Model**
+> **Generation Result**
+
+|SRC Text||
+|---|---|
+|**TRG Text**||
+
+<details>
+<summary><strong>Word-Level Tokenization Model</strong></summary>
+
+<br>
 
 | Vocab_size | Sequence_Type | Sequence |
 | :---: | :---: | :--- |
@@ -92,9 +100,12 @@ To address this issue, this repository covers comparative analysis of the impact
 | **`30k`**  | Generated        | jetzt sind regelungen zur , die sich fur hinaus , die , als fur dieser sektor eingesetzt werden . |
 | -          | Back Translation | There are now regulations in place that are intended to be used in this sector. |
 
-<br><br>
+</details>
 
-> **Word-Piece Tokenization Model**
+<details>
+<summary><strong>Word-Piece Tokenization Model</strong></summary>
+
+<br>
 
 | Vocab_size | Sequence_Type | Sequence |
 | :---: | :---: | :--- |
@@ -105,9 +116,13 @@ To address this issue, this repository covers comparative analysis of the impact
 | **`30k`**  | Generated        | nun gibt es regeln , die sich aus organis ##atorischen mitteln aus dem organis ##chen , die in der industrie von brennstoff ##nutzung dieser branche stammen , sowie fur die stoffe . |
 | -          | Back Translation | Now there are rules that come from the organizational resources that come from the industry's fuel use in this industry, as well as for the materials. |
 
-<br><br>
+</details>
 
-> **BPE Tokenization Model**
+
+<details>
+<summary><strong>BPE Tokenization Model</strong></summary>
+
+<br>
 
 | Vocab_size | Sequence_Type | Sequence |
 | :---: | :---: | :--- |
@@ -118,9 +133,12 @@ To address this issue, this repository covers comparative analysis of the impact
 | **`30k`** | Generated        | es gibt regelungen , die fur flucht nach wie vor die flucht nach einwanderungs verbindungen mit den stoffen , die fur die stoffe in dieser branche verwendet werden . |
 | -         | Back Translation | There are regulations in place for escape after immigration connections with the substances that are used for the substances in this industry. |
 
-<br><br>
+</details>
 
-> **Unigram Tokenization Model**
+<details>
+<summary><strong>Unigram Tokenization Model</strong></summary>
+
+<br>
 
 | Vocab_size | Sequence_Type | Sequence |
 | :---: | :---: | :--- |
@@ -130,6 +148,8 @@ To address this issue, this repository covers comparative analysis of the impact
 | -         | Back Translation | Currently there are rules governing the distribution of organic n organic n compounds that have to do with the fuel, what this type of fuel is used for. |
 | **`30k`** | Generated        | e s gib t regeln , die fur die fluchtige n organische r und organische r beihilfen , die sie fur fossile stoffe in betracht ziehen . |
 | -         | Back Translation | There are rules governing volatile organic compounds and organic compounds that they consider for fossil fuels. |
+
+</details>
 
 <br><br>
 

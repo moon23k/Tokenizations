@@ -73,10 +73,10 @@ class Encoder(nn.Module):
         self.layers = clones(layer, config.n_layers)
 
 
-    def forward(self, x, src_key_padding_mask):
+    def forward(self, x, e_mask):
         x = self.embeddings(x)
         for layer in self.layers:
-            x = layer(x, src_key_padding_mask=src_key_padding_mask)
+            x = layer(x, src_key_padding_mask=e_mask)
         return x
 
 
@@ -98,12 +98,10 @@ class Decoder(nn.Module):
         self.layers = clones(layer, config.n_layers)
 
 
-    def forward(self, x, memory, tgt_mask, tgt_key_padding_mask, memory_key_padding_mask):
+    def forward(self, x, memory, e_mask, d_mask):
         x = self.embeddings(x)
         for layer in self.layers:
-            x = layer(x, memory, tgt_mask=tgt_mask,
-                      tgt_key_padding_mask=tgt_key_padding_mask,
-                      memory_key_padding_mask=memory_key_padding_mask)
+            x = layer(x, memory, memory_key_padding_mask=e_mask, tgt_mask=d_mask)
         return x
 
 
@@ -139,19 +137,16 @@ class Transformer(nn.Module):
         return x[:, :-1], x[:, 1:]
 
 
-    def forward(self, src, trg):
-        trg, label = self.shift_trg(trg)
+    def forward(self, x, y):
+        y, label = self.shift_trg(y)
 
         #Masking
-        src_pad_mask = self.pad_mask(src)
-        trg_pad_mask = self.pad_mask(trg)
-        trg_mask = self.dec_mask(trg)
+        e_mask = self.pad_mask(x)
+        d_mask = self.dec_mask(y)
         
         #Actual Processing
-        memory = self.encoder(src, src_key_padding_mask=src_pad_mask)
-        dec_out = self.decoder(trg, memory, tgt_mask=trg_mask, 
-                               tgt_key_padding_mask=trg_pad_mask, 
-                               memory_key_padding_mask=src_pad_mask)
+        memory = self.encoder(x, e_mask)
+        dec_out = self.decoder(y, memory, e_mask, d_mask)
         logit = self.generator(dec_out)
         
 

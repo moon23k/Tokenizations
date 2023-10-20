@@ -69,7 +69,7 @@ class Generator:
         
         for i in range(1, self.max_len):
 
-            dec_out = self.model.decode(output, memory, e_mask, None, None)            
+            dec_out = self.model.decoder(output, memory, e_mask, None)            
             logit = self.model.generator(dec_out)
             
             next_token = logit[:, -1].argmax(-1).unsqueeze(0)

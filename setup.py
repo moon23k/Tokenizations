@@ -32,21 +32,21 @@ def select_data(orig_data, volumn=101100):
     
     for elem in orig_data:
         temp_dict = dict()
-        src, trg = elem['en'].lower(), elem['de'].lower()
-        src_len, trg_len = len(src), len(trg)
+        x, y = elem['en'].lower(), elem['de'].lower()
+        x_len, y_len = len(x), len(y)
 
         #define filtering conditions
-        min_condition = (src_len >= min_len) & (trg_len >= min_len)
-        max_condition = (src_len <= max_len) & (trg_len <= max_len)
-        dif_condition = abs(src_len - trg_len) < max_diff
+        min_condition = (x_len >= min_len) & (y_len >= min_len)
+        max_condition = (x_len <= max_len) & (y_len <= max_len)
+        dif_condition = abs(x_len - y_len) < max_diff
 
         if max_condition & min_condition & dif_condition:
-            temp_dict['src'] = src
-            temp_dict['trg'] = trg
+            temp_dict['x'] = x
+            temp_dict['y'] = y
 
             selected.append(temp_dict)
-            corpus.append(src)
-            corpus.append(trg)
+            corpus.append(x)
+            corpus.append(y)
             
             #End condition
             volumn_cnt += 1

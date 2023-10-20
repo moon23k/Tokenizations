@@ -41,6 +41,7 @@ class Config(object):
 
 
         self.mode = args.mode
+        self.search_method = args.search
         self.tokenizer_type = args.tokenizer_type.upper()
         self.path = f'{self.tokenizer_type}_{args.vocab_size}'
         self.vocab_size = int(args.vocab_size[:-1]) * 1000

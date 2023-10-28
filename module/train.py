@@ -105,11 +105,11 @@ class Trainer:
         epoch_loss = 0
 
         for idx, batch in enumerate(self.train_dataloader):
-            src = batch['src'].to(self.device)
-            trg = batch['trg'].to(self.device)
+            x = batch['x'].to(self.device)
+            y = batch['y'].to(self.device)
 
             with torch.autocast(device_type=self.device.type, dtype=torch.float16):
-                loss = self.model(src, trg).loss
+                loss = self.model(x, y).loss
                 loss = loss / self.iters_to_accumulate
 
             #Backward Loss
@@ -139,11 +139,11 @@ class Trainer:
         epoch_loss = 0
         
         with torch.no_grad():
-            for _, batch in enumerate(self.valid_dataloader):
-                src = batch['src'].to(self.device)
-                trg = batch['trg'].to(self.device)
+            for batch in self.valid_dataloader:
+                x = batch['x'].to(self.device)
+                y = batch['y'].to(self.device)
                 
-                loss = self.model(src, trg).loss
+                loss = self.model(x, y).loss
                 epoch_loss += loss.item()
         
         epoch_loss = round(epoch_loss / len(self.valid_dataloader), 3)

@@ -52,14 +52,10 @@ class Collator(object):
 
 
 def load_dataloader(config, tokenizer, split):
-    is_train = split == 'train'
-    batch_size = config.batch_size if is_train \
-                 else config.batch_size // 4
-
     return DataLoader(
         Dataset(tokenizer, split), 
         batch_size=config.batch_size, 
-        shuffle=True if is_train else False,
+        shuffle=split == 'train',
         collate_fn=Collator(config.pad_id),
         num_workers=2
     )

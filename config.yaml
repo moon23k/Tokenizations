@@ -19,7 +19,7 @@ model:
     n_layers: 3
 
 
-train:
+training:
     n_epochs: 10
     batch_size: 32
     lr: 0.0005

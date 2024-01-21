@@ -66,7 +66,8 @@ class Encoder(nn.Module):
             dim_feedforward=config.pff_dim,
             dropout=config.dropout_ratio,
             activation='gelu',
-            batch_first=True
+            batch_first=True,
+            norm_first=True
         )
 
         self.embeddings = Embeddings(config)
@@ -91,7 +92,8 @@ class Decoder(nn.Module):
             dim_feedforward=config.pff_dim,
             dropout=config.dropout_ratio,
             activation='gelu',
-            batch_first=True
+            batch_first=True,
+            norm_first=True
         )
 
         self.embeddings = Embeddings(config)

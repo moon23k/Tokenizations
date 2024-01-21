@@ -106,10 +106,12 @@ if __name__ == '__main__':
     parser.add_argument('-mode', required=True)
     parser.add_argument('-tokenizer_type', required=True)
     parser.add_argument('-vocab_size', required=True)
+    parser.add_argument('-search', default='greedy', required=False)
     
     args = parser.parse_args()
     assert args.mode in ['train', 'test', 'inference']
     assert args.tokenizer_type.upper() in ['WL', 'WP', 'BPE', 'UNI']
     assert args.vocab_size in ['10k', '20k', '30k']
+    assert args.search in ['greedy', 'beam']
     
     main(args)
